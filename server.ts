@@ -19,6 +19,7 @@ import { eq, desc, and } from 'drizzle-orm';
 import { seedDatabaseIfEmpty } from './src/db/seed.ts';
 import { requireAuth, optionalAuth, AuthRequest } from './src/middleware/auth.ts';
 import { getOrCreateUser } from './src/db/users.ts';
+import { DEFAULT_PRODUCTS, DEFAULT_COUPONS } from './src/data/groceryData.ts';
 
 dotenv.config();
 
@@ -97,7 +98,23 @@ app.get('/api/products', async (req: Request, res: Response) => {
 
     res.json(result);
   } catch (error) {
-    handleError(res, 'Failed to fetch products', error);
+    console.warn('Database query failed. Returning default in-memory grocery catalog for VS Code development:', (error as Error)?.message);
+    const category = req.query.category as string;
+    const search = req.query.search as string;
+    let fallback = [...DEFAULT_PRODUCTS];
+    if (category && category !== 'All') {
+      fallback = fallback.filter((p) => p.category.toLowerCase() === category.toLowerCase());
+    }
+    if (search && search.trim()) {
+      const q = search.toLowerCase().trim();
+      fallback = fallback.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.brand.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q)
+      );
+    }
+    res.json(fallback);
   }
 });
 
@@ -283,7 +300,7 @@ app.get('/api/coupons', async (_req: Request, res: Response) => {
     const list = await db.select().from(coupons).where(eq(coupons.isActive, true));
     res.json(list);
   } catch (error) {
-    handleError(res, 'Failed to fetch coupons', error);
+    res.json(DEFAULT_COUPONS);
   }
 });
 

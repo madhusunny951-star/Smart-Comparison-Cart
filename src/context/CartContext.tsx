@@ -40,9 +40,25 @@ const CartContext = createContext<CartContextType>({
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, getAuthHeader } = useAuth();
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('smartcart_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+
+  // Sync cart to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('smartcart_cart', JSON.stringify(cart));
+    } catch (e) {
+      // ignore
+    }
+  }, [cart]);
 
   const fetchCart = async () => {
     try {
@@ -50,12 +66,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const headers = await getAuthHeader();
       const userId = user?.uid || 'guest-session';
       const res = await fetch(`/api/cart?userId=${encodeURIComponent(userId)}`, { headers });
-      if (res.ok) {
+      const contentType = res.headers.get('content-type');
+      if (res.ok && contentType && contentType.includes('application/json')) {
         const data = await res.json();
-        setCart(data);
+        if (Array.isArray(data)) {
+          setCart(data);
+        }
       }
     } catch (err) {
-      console.error('Error fetching cart:', err);
+      // Soft fallback - keep local cart on Netlify / offline
     } finally {
       setLoading(false);
     }

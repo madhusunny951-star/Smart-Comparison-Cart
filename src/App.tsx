@@ -11,6 +11,7 @@ import { CustomerSupportModal } from './components/CustomerSupportModal.tsx';
 import { AdminDashboard } from './components/AdminDashboard.tsx';
 import { NotificationsModal } from './components/NotificationsModal.tsx';
 import { Product, Order } from './types/index.ts';
+import { DEFAULT_PRODUCTS, DEFAULT_SAMPLE_ORDER } from './data/groceryData.ts';
 import {
   Sparkles,
   Zap,
@@ -58,15 +59,35 @@ function SmartCartStore() {
       }
 
       const res = await fetch(url.toString());
-      if (res.ok) {
+      const contentType = res.headers.get('content-type');
+      if (res.ok && contentType && contentType.includes('application/json')) {
         const data = await res.json();
-        setProducts(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setProducts(data);
+          return;
+        }
       }
     } catch (err) {
-      console.error('Failed to fetch products:', err);
+      console.warn('Backend /api/products offline. Using built-in grocery catalog:', err);
     } finally {
       setLoading(false);
     }
+
+    // Resilient fallback for Netlify and local VS Code without PostgreSQL setup
+    let fallback = [...DEFAULT_PRODUCTS];
+    if (selectedCategory && selectedCategory !== 'All') {
+      fallback = fallback.filter((p) => p.category.toLowerCase() === selectedCategory.toLowerCase());
+    }
+    if (searchQuery && searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      fallback = fallback.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.brand.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q)
+      );
+    }
+    setProducts(fallback);
   };
 
   useEffect(() => {
@@ -76,15 +97,37 @@ function SmartCartStore() {
   // Load sample or current order for quick tracking preview
   useEffect(() => {
     const loadRecentOrder = async () => {
+      // 1. Try saved orders from localStorage (placed on Netlify or offline)
+      const localSaved = localStorage.getItem('smartcart_orders');
+      if (localSaved) {
+        try {
+          const parsed = JSON.parse(localSaved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setUserOrders(parsed);
+            return;
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+
+      // 2. Try fetching from server
       try {
         const res = await fetch('/api/orders?userId=demo-user-123');
-        if (res.ok) {
+        const contentType = res.headers.get('content-type');
+        if (res.ok && contentType && contentType.includes('application/json')) {
           const ords = await res.json();
-          setUserOrders(ords);
+          if (Array.isArray(ords) && ords.length > 0) {
+            setUserOrders(ords);
+            return;
+          }
         }
       } catch (e) {
         // ignore
       }
+
+      // 3. Fallback to default demo tracking order
+      setUserOrders([DEFAULT_SAMPLE_ORDER]);
     };
     loadRecentOrder();
   }, []);

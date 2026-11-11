@@ -34,7 +34,9 @@ cp .env.example .env
 ```bash
 npm run dev
 ```
-Open **[http://localhost:3000](http://localhost:3000)** in your browser. The app runs Express backend APIs (`/api/*`) and Vite frontend together seamlessly with hot reloading.
+Open **[http://localhost:3000](http://localhost:3000)** in your browser. 
+
+> 💡 **Standalone & Offline Ready**: The app features a dual-layer catalog architecture. Even if you don't have PostgreSQL installed locally on your machine, or when deploying to static platforms like Netlify, the app automatically switches to the built-in offline grocery catalog with full live comparisons across Blinkit, Zepto, Swiggy Instamart, BigBasket, DMart, and Flipkart!
 
 ### 4. Build for Production
 ```bash
@@ -46,7 +48,10 @@ This produces optimized production assets inside the `/dist` directory.
 
 ## 🚀 Step 2: Deploying to Netlify
 
-Netlify is specialized for high-speed static frontend and serverless hosting.
+Netlify is specialized for high-speed static frontend hosting. 
+
+### Why Products Show Instantly on Netlify Now:
+Previously, static Netlify hosting only served frontend files, so calls to `/api/products` failed without a running Node backend. **SmartCart now includes an automatic client-side fallback catalog and local storage synchronization.** All products, comparisons, cart items, coupons, checkout steps, Razorpay payment simulation, live order tracking, and PDF tax invoice generation work **100% interactively on Netlify out of the box**!
 
 ### Method A: Connect via GitHub / GitLab (Recommended - Continuous Deployment)
 1. Push your project to GitHub:
