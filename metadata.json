@@ -1,0 +1,6 @@
+{
+  "name": "SmartCart - Grocery Price Comparison & Shopping",
+  "description": "SmartCart grocery price comparison and direct e-commerce shopping platform with multi-platform price tracking, Razorpay checkout, live delivery tracking, and admin dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
